@@ -398,3 +398,15 @@ requirements.txt
   bajo el nombre completo original.
 - Todas las rutas usan `pathlib.Path` — el proyecto funciona igual en Windows,
   macOS y Linux sin ningún cambio de configuración.
+
+
+
+
+
+## Licencia
+
+- **Código**: [MIT License](LICENSE)
+- **Datos** (`premodern.db`): [Creative Commons Attribution 4.0 (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/)
+
+Los datos de torneos provienen de [tcdecks.net](https://www.tcdecks.net).
+Al usar los datos, por favor incluí una referencia a este repositorio.
