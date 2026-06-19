@@ -124,7 +124,7 @@ def _join_list(values) -> str:
 
 _session = requests.Session()
 _session.headers.update({
-    "User-Agent": "MTGPremodernAnalytics/1.0 (github.com/YOUR_USER/YOUR_REPO)",
+    "User-Agent": "MTGPremodernAnalytics/1.0 (github.com/Jmrival/MTG-premodern-dashboard)",
     "Accept": "application/json",
 })
 
