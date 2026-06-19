@@ -1,0 +1,13 @@
+{
+  "_instructions": "Agregá entradas con el ID del torneo (como string) para asignar país y ciudad manualmente. Luego corré: python db/detect_location.py db/premodern.db --reprocess",
+  "_formato": {
+    "ID_del_torneo": {
+      "country": "Nombre del país en inglés (ej: Argentina, Spain, Italy)",
+      "city": "Ciudad o región (opcional, puede omitirse)"
+    }
+  },
+  "_ejemplo": {
+    "12345": {"country": "Argentina", "city": "Buenos Aires"},
+    "67890": {"country": "Spain", "city": "Valencia"}
+  }
+}

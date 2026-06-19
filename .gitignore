@@ -1,0 +1,43 @@
+# Base de datos SQLite (descargada desde Colab — no versionar)
+db/premodern.db
+db/premodern.db-shm
+db/premodern.db-wal
+db/VA/
+db/Backup/
+db/Eliminadas/
+
+# Archivos de desarrollo / prueba
+deck_sample.html
+deck_test.html
+deck_full.html
+Dir.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+.env
+
+# IDE / herramientas locales
+.vscode/
+.idea/
+*.code-workspace
+.claude/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

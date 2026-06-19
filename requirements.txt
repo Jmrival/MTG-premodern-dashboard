@@ -1,0 +1,17 @@
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
+# playwright>=1.40.0  # solo necesario si usás scraping con browser (no requerido)
+pandas>=2.1.0
+numpy>=1.26.0
+scikit-learn>=1.3.0
+scipy>=1.11.0
+statsmodels>=0.14.0
+umap-learn>=0.5.4
+hdbscan>=0.8.33
+networkx>=3.2.0
+streamlit>=1.29.0
+plotly>=5.18.0
+pytest>=7.4.0
+python-dotenv>=1.0.0
+tqdm>=4.66.0
