@@ -113,7 +113,7 @@ MTG-Premodern/
 ### Paso 5 — Correr el dashboard
 
 ```bash
-streamlit run dashboard/app.py
+streamlit run dashboard/Intro.py
 ```
 
 Se va a abrir automáticamente el navegador en `http://localhost:8501`.
@@ -141,7 +141,7 @@ pip install -r requirements.txt
 # 4. Copiar premodern.db a db/premodern.db
 
 # 5. Correr el dashboard
-streamlit run dashboard/app.py
+streamlit run dashboard/Intro.py
 ```
 
 ---

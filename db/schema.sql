@@ -7,12 +7,14 @@ CREATE TABLE IF NOT EXISTS tournaments (
     date DATE NOT NULL,
     player_count INTEGER,
     source TEXT CHECK(source IN ('paper', 'webcam', 'mol', 'unknown')) DEFAULT 'unknown',
+    format TEXT NOT NULL DEFAULT 'premodern',  -- ej. 'premodern', 'oldschool', 'vintage'
     url TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_tournaments_date ON tournaments(date);
 CREATE INDEX IF NOT EXISTS idx_tournaments_source ON tournaments(source);
+CREATE INDEX IF NOT EXISTS idx_tournaments_format ON tournaments(format);
 
 CREATE TABLE IF NOT EXISTS decks (
     id INTEGER PRIMARY KEY,
@@ -99,15 +101,20 @@ CREATE TABLE IF NOT EXISTS scrape_log (
 
 CREATE VIEW IF NOT EXISTS v_meta_share AS
 SELECT
+    t.format,
     d.archetype,
     strftime('%Y-%m', d.date) AS month,
     COUNT(*) AS deck_count,
-    COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (PARTITION BY strftime('%Y-%m', d.date)) AS meta_share_pct
+    COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (
+        PARTITION BY t.format, strftime('%Y-%m', d.date)
+    ) AS meta_share_pct
 FROM decks d
-GROUP BY d.archetype, strftime('%Y-%m', d.date);
+JOIN tournaments t ON t.id = d.tournament_id
+GROUP BY t.format, d.archetype, strftime('%Y-%m', d.date);
 
 CREATE VIEW IF NOT EXISTS v_archetype_success AS
 SELECT
+    t.format,
     d.archetype,
     COUNT(*) AS total_entries,
     AVG(CASE WHEN d.position <= 8 THEN 1.0 ELSE 0.0 END) AS top8_rate,
@@ -115,22 +122,27 @@ SELECT
     AVG(CASE WHEN d.position = 1 THEN 1.0 ELSE 0.0 END) AS win_rate,
     AVG(d.position * 1.0 / d.total_players) AS avg_relative_position
 FROM decks d
+JOIN tournaments t ON t.id = d.tournament_id
 WHERE d.total_players >= 8
-GROUP BY d.archetype
+GROUP BY t.format, d.archetype
 HAVING COUNT(*) >= 10;
 
 CREATE VIEW IF NOT EXISTS v_card_popularity AS
 SELECT
+    t.format,
     dc.card_name,
     dc.is_sideboard,
     COUNT(DISTINCT dc.deck_id) AS deck_count,
     SUM(dc.quantity) AS total_copies,
     AVG(dc.quantity) AS avg_copies_per_deck
 FROM deck_cards dc
-GROUP BY dc.card_name, dc.is_sideboard;
+JOIN decks d ON d.id = dc.deck_id
+JOIN tournaments t ON t.id = d.tournament_id
+GROUP BY t.format, dc.card_name, dc.is_sideboard;
 
 CREATE VIEW IF NOT EXISTS v_player_stats AS
 SELECT
+    t.format,
     d.player_name,
     COUNT(*)                                              AS total_entradas,
     COUNT(DISTINCT d.tournament_id)                       AS torneos_jugados,
@@ -145,6 +157,7 @@ SELECT
     MIN(d.date)                                           AS primer_torneo,
     MAX(d.date)                                           AS ultimo_torneo
 FROM decks d
+JOIN tournaments t ON t.id = d.tournament_id
 WHERE d.total_players >= 8
-GROUP BY d.player_name
+GROUP BY t.format, d.player_name
 HAVING COUNT(*) >= 3;

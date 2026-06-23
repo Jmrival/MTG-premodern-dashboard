@@ -77,5 +77,6 @@ with mini_col2:
 st.markdown("---")
 st.markdown(
     "Navegá por las páginas en el sidebar para explorar el metagame, "
-    "arquetipos, cartas, jugadores y análisis de Machine Learning."
+    "arquetipos, cartas, jugadores y análisis de posibles tendencias y predicciones.\n\n"
+    "Usá los filtros en el sidebar para ajustar el periodo, la fuente y la región que te interese."
 )

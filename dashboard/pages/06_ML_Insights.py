@@ -15,7 +15,26 @@ st.header("ML Insights")
 has_cards = conn.execute("SELECT COUNT(*) FROM deck_cards").fetchone()[0]
 
 # ── Meta Prediction ───────────────────────────────────────────────────────────
-st.subheader("Predicción del Meta")
+_INFO_FORECAST = """
+**¿Cómo se calcula este forecast?**
+
+Usa *Suavizado Exponencial de Holt-Winters* (tendencia aditiva amortiguada, sin estacionalidad).
+El modelo analiza la serie histórica de % meta mensual de cada arquetipo y proyecta
+los próximos 3 meses asignando más peso a los datos recientes.
+
+**¿Qué tan confiable es?**
+
+- Funciona bien para tendencias claras y sostenidas (un arquetipo en ascenso o caída).
+- Es poco confiable ante cambios bruscos por bans, nuevas cartas o eventos puntuales.
+- Requiere al menos 6 meses de historia por arquetipo; con menos datos el error aumenta.
+- Tomarlo como una señal de dirección, no como un número exacto.
+"""
+
+col_title, col_info = st.columns([8, 1])
+col_title.subheader("Predicción del Meta")
+with col_info.popover("ℹ️"):
+    st.markdown(_INFO_FORECAST)
+
 try:
     from analysis.predictive import forecast_meta
     from analysis.meta_evolution import get_meta_share
@@ -32,11 +51,24 @@ try:
     if not forecasts.empty:
         hist_meta = load_hist_meta()
         if not hist_meta.empty:
-            # Only show archetypes that appear in forecast
             arch_in_forecast = forecasts["archetype"].unique()
             hist_filtered = hist_meta[hist_meta["archetype"].isin(arch_in_forecast)]
+
+            # Temporal scale control
+            all_months = sorted(hist_filtered["month"].unique())
+            n_months = len(all_months)
+            months_back = st.slider(
+                "Meses de historia a mostrar",
+                min_value=3,
+                max_value=n_months,
+                value=min(24, n_months),
+                step=1,
+            )
+            cutoff = all_months[-months_back] if months_back < n_months else all_months[0]
+            hist_window = hist_filtered[hist_filtered["month"] >= cutoff]
+
             st.plotly_chart(
-                forecast_line(hist_filtered, forecasts),
+                forecast_line(hist_window, forecasts),
                 use_container_width=True,
             )
         st.dataframe(forecasts.rename(columns={

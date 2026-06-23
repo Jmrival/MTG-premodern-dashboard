@@ -10,6 +10,7 @@ class Tournament:
     date: date
     player_count: Optional[int] = None
     source: str = "unknown"
+    format: str = "premodern"
     url: Optional[str] = None
 
 

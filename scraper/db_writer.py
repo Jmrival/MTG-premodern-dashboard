@@ -19,14 +19,14 @@ class DBWriter:
 
     def upsert_tournament(self, t: Tournament):
         self.conn.execute(
-            """INSERT INTO tournaments (id, name, date, player_count, source, url)
-               VALUES (?, ?, ?, ?, ?, ?)
+            """INSERT INTO tournaments (id, name, date, player_count, source, format, url)
+               VALUES (?, ?, ?, ?, ?, ?, ?)
                ON CONFLICT(id) DO UPDATE SET
                  player_count = MAX(tournaments.player_count, excluded.player_count),
                  source = CASE WHEN tournaments.source = 'unknown'
                                THEN excluded.source ELSE tournaments.source END,
                  url = COALESCE(tournaments.url, excluded.url)""",
-            (t.id, t.name, str(t.date), t.player_count, t.source, t.url),
+            (t.id, t.name, str(t.date), t.player_count, t.source, t.format, t.url),
         )
 
     def insert_deck(self, d: Deck) -> bool:

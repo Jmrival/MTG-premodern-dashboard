@@ -27,7 +27,7 @@ import requests
 
 SCRYFALL_COLLECTION_URL = "https://api.scryfall.com/cards/collection"
 BATCH_SIZE = 75
-DELAY = 0.15  # ~6 req/s — comfortably under Scryfall's 10 req/s limit
+DELAY = 0.25  # ~4 req/s — conservative to avoid 429 rate limits on long runs
 
 NEW_COLUMNS = [
     ("mana_cost", "TEXT"),

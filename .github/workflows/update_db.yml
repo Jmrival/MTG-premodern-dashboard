@@ -1,0 +1,56 @@
+name: Actualizar base de datos
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # todos los lunes a las 6am UTC
+  workflow_dispatch:        # también ejecutable manualmente desde GitHub
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Instalar dependencias de scraping
+        run: |
+          pip install requests beautifulsoup4 lxml tqdm
+
+      - name: Descargar DB actual desde última Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p db
+          RELEASE_URL=$(gh release view --json assets \
+            --jq '.assets[] | select(.name=="premodern.db") | .url' 2>/dev/null || echo "")
+          if [ -n "$RELEASE_URL" ]; then
+            echo "Descargando DB desde Release anterior..."
+            gh release download --pattern "premodern.db" --dir db --clobber
+          else
+            echo "No hay Release previa — se creará una nueva DB desde cero."
+          fi
+
+      - name: Ejecutar scraping incremental (sin Scryfall)
+        run: |
+          python db/update.py db/premodern.db --no-scryfall
+
+      - name: Publicar nueva Release con DB actualizada
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="db-$(date -u +'%Y-%m-%d')"
+          # Eliminar release del mismo día si ya existe (reruns del workflow)
+          gh release delete "$VERSION" --yes 2>/dev/null || true
+          gh release create "$VERSION" \
+            db/premodern.db \
+            --title "Base de datos $VERSION" \
+            --notes "Actualización automática: $(date -u +'%Y-%m-%d %H:%M UTC')" \
+            --latest
