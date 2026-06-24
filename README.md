@@ -1,6 +1,6 @@
 # MTG Premodern Analytics
 
-Proyecto de data science sobre el metagame de **Magic: The Gathering — formato Premodern**,
+Proyecto de data science sobre el metagame de Magic: The Gathering — formato Premodern,
 basado en resultados de torneos publicados en [tcdecks.net](https://www.tcdecks.net).
 
 Incluye scraping de torneos/mazos/cartas, análisis de metagame con Python/SQL y un
