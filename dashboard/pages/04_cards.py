@@ -175,7 +175,7 @@ st.dataframe(
     column_config={
         "Precio (USD)": st.column_config.NumberColumn("Precio (USD)", format="$%.2f"),
     },
-    use_container_width=True, hide_index=True,
+    width="stretch", hide_index=True,
 )
 
 # Card type distribution pie
@@ -184,7 +184,7 @@ if not top_cards.empty and "card_type" in top_cards.columns:
     type_counts.columns = ["Tipo", "Mazos"]
     fig_type = px.pie(type_counts, values="Mazos", names="Tipo",
                       title="Distribución por Tipo de Carta (cartas filtradas)")
-    st.plotly_chart(fig_type, use_container_width=True)
+    st.plotly_chart(fig_type, width="stretch")
 
 # Card search
 st.subheader("Buscar Carta")
@@ -197,7 +197,7 @@ if card_search:
         st.dataframe(results.rename(columns={
             "card_name": "Carta", "card_type": "Tipo", "archetype": "Arquetipo",
             "decks": "Mazos", "avg_qty": "Promedio", "is_sideboard": "Sideboard",
-        }), use_container_width=True, hide_index=True)
+        }), width="stretch", hide_index=True)
 
         card_name = results["card_name"].iloc[0]
         time_data = load_card_timeline(card_name)
@@ -205,7 +205,7 @@ if card_search:
             fig = px.line(time_data, x="month", y="decks",
                           title=f"Uso de {card_name} en el tiempo",
                           labels={"decks": "Mazos", "month": "Mes"})
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
     else:
         st.info("No se encontraron resultados.")
 
@@ -227,7 +227,7 @@ try:
         display_cols = [c for c in ["card_name", "adoption_pct", "z_score"] if c in breakouts.columns]
         st.dataframe(breakouts[display_cols].rename(columns={
             "card_name": "Carta", "adoption_pct": "Adopción Actual %", "z_score": "Z-Score",
-        }), use_container_width=True, hide_index=True)
+        }), width="stretch", hide_index=True)
     else:
         st.info("No se detectaron cartas con z-score > 3σ en el período actual.")
 except ImportError:
@@ -252,7 +252,7 @@ try:
     if not trends.empty:
         significant = trends[trends["significant"]]
         if not significant.empty:
-            st.plotly_chart(trend_bar(significant), use_container_width=True)
+            st.plotly_chart(trend_bar(significant), width="stretch")
             col1, col2 = st.columns(2)
             with col1:
                 st.markdown("**En Alza**")

@@ -69,12 +69,12 @@ try:
 
             st.plotly_chart(
                 forecast_line(hist_window, forecasts),
-                use_container_width=True,
+                width="stretch",
             )
         st.dataframe(forecasts.rename(columns={
             "archetype": "Arquetipo", "period": "Período",
             "forecast_share": "% Predicho", "current_share": "% Actual",
-        }), use_container_width=True, hide_index=True)
+        }), width="stretch", hide_index=True)
     else:
         st.info("No hay suficientes datos históricos para generar predicciones.")
 except ImportError:
@@ -98,7 +98,7 @@ if st.button("Ejecutar Clustering (puede tardar ~1 min)"):
             from dashboard.components.charts import umap_scatter
             result = full_clustering_pipeline(conn)
             if result is not None and not result.empty:
-                st.plotly_chart(umap_scatter(result), use_container_width=True)
+                st.plotly_chart(umap_scatter(result), width="stretch")
                 n_clusters = result["cluster"].nunique() - (1 if -1 in result["cluster"].values else 0)
                 noise = (result["cluster"] == -1).sum()
                 st.caption(f"Clusters encontrados: {n_clusters} | Puntos sin cluster: {noise}")
@@ -127,11 +127,11 @@ try:
     top_pairs = load_pmi(min_decks, top_n=top_n_pairs)
 
     if top_pairs is not None:
-        st.plotly_chart(cooccurrence_network(top_pairs), use_container_width=True)
+        st.plotly_chart(cooccurrence_network(top_pairs), width="stretch")
         with st.expander("Ver tabla de pares"):
             st.dataframe(top_pairs.rename(columns={
                 "card_a": "Carta A", "card_b": "Carta B", "pmi": "PMI",
-            }), use_container_width=True, hide_index=True)
+            }), width="stretch", hide_index=True)
     else:
         st.info("No hay suficientes datos para análisis de co-ocurrencia con ese mínimo.")
 except ImportError as e:

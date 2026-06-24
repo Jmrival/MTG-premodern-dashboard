@@ -113,7 +113,7 @@ if not tiers.empty:
                 column_config={"Precio Prom. (USD)": st.column_config.NumberColumn(
                     "Precio Prom. (USD)", format="$%.0f"
                 )},
-                use_container_width=True, hide_index=True,
+                width="stretch", hide_index=True,
             )
 
 # Meta pie chart + Success scatter
@@ -123,14 +123,14 @@ with col1:
                                filters["source"], filters["min_size"],
                                filters.get("country", "all"), tuple(filters.get("archetypes", [])))
     if not meta_df.empty:
-        st.plotly_chart(meta_share_pie(meta_df), use_container_width=True)
+        st.plotly_chart(meta_share_pie(meta_df), width="stretch")
 
 with col2:
     success = load_archetype_success(filters["start_date"], filters["end_date"],
                                      filters["source"], filters["min_size"],
                                      filters.get("country", "all"), tuple(filters.get("archetypes", [])))
     if not success.empty:
-        st.plotly_chart(success_scatter(success), use_container_width=True)
+        st.plotly_chart(success_scatter(success), width="stretch")
 
 # Meta by source (paper vs online)
 st.subheader("Meta por Fuente — Paper vs Online")
@@ -173,7 +173,7 @@ try:
             color_discrete_map={"paper": "#2ecc71", "webcam": "#3498db", "mol": "#e67e22"},
         )
         fig_src.update_layout(xaxis_tickangle=-30)
-        st.plotly_chart(fig_src, use_container_width=True)
+        st.plotly_chart(fig_src, width="stretch")
 except Exception as e:
     st.info(f"Comparación por fuente no disponible: {e}")
 
@@ -203,7 +203,7 @@ if not success.empty:
     st.dataframe(
         top10[base_cols].rename(columns=base_rename),
         column_config=col_cfg,
-        use_container_width=True, hide_index=True,
+        width="stretch", hide_index=True,
     )
 
 # Scatter: Top 8 % vs Precio promedio
@@ -226,7 +226,7 @@ if not success.empty and not prices_df.empty:
                         "top8_pct": ":.1f", "total_entries": True},
         )
         fig1.update_layout(xaxis_tickprefix="$", showlegend=False)
-        st.plotly_chart(fig1, use_container_width=True)
+        st.plotly_chart(fig1, width="stretch")
 
     with sc2:
         fig2 = px.scatter(
@@ -240,7 +240,7 @@ if not success.empty and not prices_df.empty:
                         "win_pct": ":.1f", "total_entries": True},
         )
         fig2.update_layout(xaxis_tickprefix="$", showlegend=False)
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
 # Meta por País
 st.subheader("Meta por País")
@@ -284,7 +284,7 @@ try:
             labels={"archetype": "Arquetipo", "share_pct": "% Meta", "country": "País"},
         )
         fig_country.update_layout(xaxis_tickangle=-30)
-        st.plotly_chart(fig_country, use_container_width=True)
+        st.plotly_chart(fig_country, width="stretch")
         st.caption("Solo torneos con país identificado. Top 8 países por volumen de torneos.")
 except Exception as e:
     st.info(f"Comparación por país no disponible: {e}")

@@ -58,7 +58,7 @@ with mini_col1:
         )
         fig_arch.update_layout(xaxis_tickangle=-30, height=300,
                                margin=dict(t=40, b=60, l=40, r=10))
-        st.plotly_chart(fig_arch, use_container_width=True)
+        st.plotly_chart(fig_arch, width="stretch")
 
 with mini_col2:
     monthly = pd.read_sql_query(
@@ -72,7 +72,7 @@ with mini_col2:
             labels={"mes": "Mes", "mazos": "Mazos"},
         )
         fig_monthly.update_layout(height=300, margin=dict(t=40, b=60, l=40, r=10))
-        st.plotly_chart(fig_monthly, use_container_width=True)
+        st.plotly_chart(fig_monthly, width="stretch")
 
 st.markdown("---")
 st.markdown(

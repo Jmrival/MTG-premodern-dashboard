@@ -69,7 +69,7 @@ scatter_df = load_leaderboard(filters["start_date"], filters["end_date"],
                                filters["source"], filters["min_size"],
                                filters.get("country", "all"), tuple(filters.get("archetypes", [])))
 if not scatter_df.empty:
-    st.plotly_chart(player_scatter(scatter_df), use_container_width=True)
+    st.plotly_chart(player_scatter(scatter_df), width="stretch")
 
 # Leaderboard
 st.subheader("Leaderboard")
@@ -81,7 +81,7 @@ st.dataframe(leaderboard.rename(columns={
     "victorias": "Victorias", "top4s": "Top 4", "top8s": "Top 8",
     "top8_pct": "Top 8 %", "arquetipos": "Arquetipos",
     "primera": "Primera", "ultima": "Última",
-}), use_container_width=True, hide_index=True)
+}), width="stretch", hide_index=True)
 
 # Player search
 st.subheader("Buscar Jugador")
@@ -105,13 +105,13 @@ if player_search:
         fig_arch = px.bar(arch_counts, x="Arquetipo", y="Entradas",
                           color="Arquetipo", title="Top 5 arquetipos")
         fig_arch.update_layout(showlegend=False)
-        st.plotly_chart(fig_arch, use_container_width=True)
+        st.plotly_chart(fig_arch, width="stretch")
 
         st.markdown("**Historial completo:**")
         st.dataframe(player_data.rename(columns={
             "player_name": "Jugador", "archetype": "Arquetipo",
             "position": "Pos", "total_players": "Total",
             "tournament": "Torneo", "date": "Fecha",
-        }), use_container_width=True, hide_index=True)
+        }), width="stretch", hide_index=True)
     else:
         st.info("Jugador no encontrado.")

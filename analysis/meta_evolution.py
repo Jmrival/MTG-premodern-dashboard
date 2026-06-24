@@ -48,9 +48,11 @@ def get_meta_share(conn: sqlite3.Connection, min_date=None, max_date=None,
     df = pd.read_sql_query(query, conn, params=params)
     if df.empty:
         return df
+    df = df.dropna(subset=["month", "archetype"])
+    df["deck_count"] = df["deck_count"].astype(int)
     monthly_totals = df.groupby("month")["deck_count"].transform("sum")
     df["meta_share_pct"] = (df["deck_count"] / monthly_totals * 100).round(2)
-    return df
+    return df.reset_index(drop=True)
 
 
 def get_meta_trend(conn: sqlite3.Connection, window: int = 3,
@@ -114,7 +116,7 @@ def get_tier_list(conn: sqlite3.Connection, months: int = 3,
 
     tiers["tier"] = pd.cut(
         tiers["avg_share"],
-        bins=[-1, 2, 5, 100],
+        bins=[-1, 2, 5, float("inf")],
         labels=["Tier 3", "Tier 2", "Tier 1"],
-    )
+    ).astype(str)
     return tiers

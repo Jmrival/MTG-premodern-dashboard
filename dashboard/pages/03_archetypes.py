@@ -235,7 +235,7 @@ if selected:
         evo = load_evolution(selected, filters["start_date"], filters["end_date"],
                              filters["source"], filters["min_size"], filters.get("country", "all"))
         if evo is not None and not evo.empty:
-            st.plotly_chart(evolution_line(evo, selected), use_container_width=True)
+            st.plotly_chart(evolution_line(evo, selected), width="stretch")
     except Exception:
         pass
 
@@ -262,7 +262,7 @@ if selected:
                         curve_data["curve"], curve_data["avg_lands"],
                         curve_data["avg_cmc"], selected,
                     ),
-                    use_container_width=True,
+                    width="stretch",
                 )
                 st.caption(
                     f"Promedio sobre {curve_data['total_decks']:,} mazos · "
@@ -303,7 +303,7 @@ if selected:
                         "price_usd": "Precio (USD)",
                     }),
                     column_config=success_col_config,
-                    use_container_width=True, hide_index=True,
+                    width="stretch", hide_index=True,
                 )
 
             st.subheader("Flex Slots (25-75%)")
@@ -316,7 +316,7 @@ if selected:
                         "price_usd": "Precio (USD)",
                     }),
                     column_config=success_col_config,
-                    use_container_width=True, hide_index=True,
+                    width="stretch", hide_index=True,
                 )
 
             st.subheader("Sideboard más común")
@@ -328,7 +328,7 @@ if selected:
                         "price_usd": "Precio (USD)",
                     }),
                     column_config=success_col_config,
-                    use_container_width=True, hide_index=True,
+                    width="stretch", hide_index=True,
                 )
         else:
             st.info("No hay datos de cartas para el período/filtros seleccionados.")
@@ -347,7 +347,7 @@ if selected:
                 "Valor (USD)", format="$%.0f"
             ),
         },
-        use_container_width=True, hide_index=True,
+        width="stretch", hide_index=True,
     )
 
     # Breakthroughs: low-adoption cards with recent high success
@@ -365,7 +365,7 @@ if selected:
                     "top8_pct": "Top 8 %", "top4_pct": "Top 4 %", "top1_pct": "Top 1 %",
                 }),
                 column_config=success_col_config,
-                use_container_width=True, hide_index=True,
+                width="stretch", hide_index=True,
             )
         else:
             st.info("No se detectaron breakthroughs con los filtros actuales.")

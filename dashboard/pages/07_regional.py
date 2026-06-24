@@ -140,7 +140,7 @@ with col_vol:
             "jugadores": "Jugadores únicos", "primer_torneo": "Desde",
             "ultimo_torneo": "Hasta", "promedio_jugadores": "Prom. jugadores",
         }),
-        use_container_width=True, hide_index=True,
+        width="stretch", hide_index=True,
     )
 with col_bar:
     fig_vol = px.bar(
@@ -150,7 +150,7 @@ with col_bar:
         labels={"torneos": "Torneos", "country": "País"},
     )
     fig_vol.update_layout(showlegend=False, coloraxis_showscale=False, yaxis={"autorange": "reversed"})
-    st.plotly_chart(fig_vol, use_container_width=True)
+    st.plotly_chart(fig_vol, width="stretch")
 
 # ── Comparación de meta por país ──────────────────────────────────────────────
 st.subheader("Comparación de Meta por País")
@@ -177,7 +177,7 @@ if selected_countries:
             labels={"archetype": "Arquetipo", "share_pct": "% Meta", "country": "País"},
         )
         fig_meta.update_layout(xaxis_tickangle=-30)
-        st.plotly_chart(fig_meta, use_container_width=True)
+        st.plotly_chart(fig_meta, width="stretch")
 
 # ── Evolución de un arquetipo por país ────────────────────────────────────────
 st.subheader("Evolución de Arquetipo por País")
@@ -204,7 +204,7 @@ if selected_arch and evo_countries:
             labels={"month": "Mes", "share_pct": "% Meta", "country": "País"},
             markers=True,
         )
-        st.plotly_chart(fig_evo, use_container_width=True)
+        st.plotly_chart(fig_evo, width="stretch")
     else:
         st.info("Sin datos suficientes para este arquetipo en los países seleccionados.")
 
@@ -220,7 +220,7 @@ if detail_country:
                 "jugadores": "Jugadores", "ganador": "Ganador",
                 "arquetipo_ganador": "Arquetipo ganador",
             }),
-            use_container_width=True, hide_index=True,
+            width="stretch", hide_index=True,
         )
     else:
         st.info("No hay torneos para este país en el período seleccionado.")
