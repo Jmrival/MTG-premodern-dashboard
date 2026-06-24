@@ -16,7 +16,7 @@ def get_archetype_success(conn: sqlite3.Connection,
                           min_entries: int = 10,
                           min_tournament_size: int = 8,
                           min_date=None, max_date=None,
-                          source=None) -> pd.DataFrame:
+                          source=None, country=None, archetypes=None) -> pd.DataFrame:
     """Success metrics per archetype."""
     conditions = ["total_players >= ?", "position IS NOT NULL"]
     params = [min_tournament_size]
@@ -32,6 +32,15 @@ def get_archetype_success(conn: sqlite3.Connection,
             "tournament_id IN (SELECT id FROM tournaments WHERE source = ?)"
         )
         params.append(source)
+    if country and country != "all":
+        conditions.append(
+            "tournament_id IN (SELECT id FROM tournaments WHERE country = ?)"
+        )
+        params.append(country)
+    if archetypes:
+        placeholders = ",".join(["?"] * len(archetypes))
+        conditions.append(f"archetype IN ({placeholders})")
+        params.extend(archetypes)
 
     where = " AND ".join(conditions)
     df = pd.read_sql_query(
@@ -67,9 +76,10 @@ def get_archetype_success(conn: sqlite3.Connection,
 def get_archetype_success_over_time(conn: sqlite3.Connection,
                                     archetype: str = None,
                                     min_date=None, max_date=None,
-                                    source=None) -> pd.DataFrame:
+                                    source=None, min_size=None, country=None) -> pd.DataFrame:
     """Monthly success metrics, optionally filtered by archetype."""
-    conditions = ["total_players >= 8", "position IS NOT NULL"]
+    effective_min_size = max(8, min_size) if min_size else 8
+    conditions = [f"total_players >= {effective_min_size}", "position IS NOT NULL"]
     params = []
 
     if archetype:
@@ -86,6 +96,11 @@ def get_archetype_success_over_time(conn: sqlite3.Connection,
             "tournament_id IN (SELECT id FROM tournaments WHERE source = ?)"
         )
         params.append(source)
+    if country and country != "all":
+        conditions.append(
+            "tournament_id IN (SELECT id FROM tournaments WHERE country = ?)"
+        )
+        params.append(country)
 
     where = " AND ".join(conditions)
     df = pd.read_sql_query(

@@ -54,15 +54,23 @@ with fcol3:
 
 
 @st.cache_data(ttl=3600)
-def load_top_cards(start_date, end_date, source, min_size, types, specific_cards, exclude_basics):
+def load_top_cards(start_date, end_date, source, min_size, types, specific_cards, exclude_basics,
+                   country="all", archetypes=()):
     extra = ""
     params = [start_date, end_date]
     if source and source != "all":
         extra += " AND t.source = ?"
         params.append(source)
+    if country and country != "all":
+        extra += " AND t.country = ?"
+        params.append(country)
     if min_size and min_size > 1:
         extra += " AND d.total_players >= ?"
         params.append(min_size)
+    if archetypes:
+        placeholders = ",".join(["?"] * len(archetypes))
+        extra += f" AND d.archetype IN ({placeholders})"
+        params.extend(archetypes)
 
     if types:
         actual_types = [t for t in types if t != "Sin tipo"]
@@ -104,12 +112,21 @@ def load_top_cards(start_date, end_date, source, min_size, types, specific_cards
 
 
 @st.cache_data(ttl=3600)
-def load_card_search(query, source, min_size):
+def load_card_search(query, source, min_size, start_date=None, end_date=None, country="all"):
     extra = ""
     params = [f"%{query}%"]
+    if start_date:
+        extra += " AND d.date >= ?"
+        params.append(start_date)
+    if end_date:
+        extra += " AND d.date <= ?"
+        params.append(end_date)
     if source and source != "all":
         extra += " AND t.source = ?"
         params.append(source)
+    if country and country != "all":
+        extra += " AND t.country = ?"
+        params.append(country)
     if min_size and min_size > 1:
         extra += " AND d.total_players >= ?"
         params.append(min_size)
@@ -145,7 +162,8 @@ st.subheader("Cartas más jugadas (Mainboard)")
 top_cards = load_top_cards(filters["start_date"], filters["end_date"],
                             filters["source"], filters["min_size"],
                             tuple(sorted(selected_types)), tuple(sorted(selected_cards)),
-                            exclude_basics)
+                            exclude_basics,
+                            filters.get("country", "all"), tuple(filters.get("archetypes", [])))
 if top_cards.empty:
     st.info("No hay cartas que coincidan con los filtros seleccionados.")
 st.dataframe(
@@ -172,7 +190,9 @@ if not top_cards.empty and "card_type" in top_cards.columns:
 st.subheader("Buscar Carta")
 card_search = st.text_input("Nombre de carta")
 if card_search:
-    results = load_card_search(card_search, filters["source"], filters["min_size"])
+    results = load_card_search(card_search, filters["source"], filters["min_size"],
+                               filters["start_date"], filters["end_date"],
+                               filters.get("country", "all"))
     if not results.empty:
         st.dataframe(results.rename(columns={
             "card_name": "Carta", "card_type": "Tipo", "archetype": "Arquetipo",
@@ -195,10 +215,14 @@ try:
     from analysis.card_trends import get_breakout_cards
 
     @st.cache_data(ttl=3600)
-    def load_breakout_cards():
-        return get_breakout_cards(get_connection())
+    def load_breakout_cards(start_date, end_date, source, min_size, country="all", archetypes=()):
+        return get_breakout_cards(get_connection(), start_date=start_date, end_date=end_date,
+                                  source=source, min_size=min_size, country=country,
+                                  archetypes=archetypes if archetypes else None)
 
-    breakouts = load_breakout_cards()
+    breakouts = load_breakout_cards(filters["start_date"], filters["end_date"],
+                                    filters["source"], filters["min_size"],
+                                    filters.get("country", "all"), tuple(filters.get("archetypes", [])))
     if breakouts is not None and not breakouts.empty:
         display_cols = [c for c in ["card_name", "adoption_pct", "z_score"] if c in breakouts.columns]
         st.dataframe(breakouts[display_cols].rename(columns={
@@ -217,10 +241,14 @@ try:
     from analysis.card_trends import detect_trends
 
     @st.cache_data(ttl=3600)
-    def load_trends():
-        return detect_trends(get_connection())
+    def load_trends(start_date, end_date, source, min_size, country="all", archetypes=()):
+        return detect_trends(get_connection(), start_date=start_date, end_date=end_date,
+                             source=source, min_size=min_size, country=country,
+                             archetypes=archetypes if archetypes else None)
 
-    trends = load_trends()
+    trends = load_trends(filters["start_date"], filters["end_date"],
+                         filters["source"], filters["min_size"],
+                         filters.get("country", "all"), tuple(filters.get("archetypes", [])))
     if not trends.empty:
         significant = trends[trends["significant"]]
         if not significant.empty:

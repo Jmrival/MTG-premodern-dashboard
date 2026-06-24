@@ -19,26 +19,30 @@ filters = sidebar_filters(conn)
 
 
 @st.cache_data(ttl=3600)
-def load_tier_list(start_date, end_date, source, min_size):
+def load_tier_list(start_date, end_date, source, min_size, country="all", archetypes=()):
     return get_tier_list(get_connection(), min_date=start_date, max_date=end_date,
-                         source=source, min_size=min_size)
+                         source=source, min_size=min_size, country=country,
+                         archetypes=archetypes if archetypes else None)
 
 
 @st.cache_data(ttl=3600)
-def load_meta_share(start_date, end_date, source, min_size):
+def load_meta_share(start_date, end_date, source, min_size, country="all", archetypes=()):
     return get_meta_share(get_connection(), min_date=start_date, max_date=end_date,
-                          source=source, min_size=min_size)
+                          source=source, min_size=min_size, country=country,
+                          archetypes=archetypes if archetypes else None)
 
 
 @st.cache_data(ttl=3600)
-def load_archetype_success(start_date, end_date, source, min_size):
+def load_archetype_success(start_date, end_date, source, min_size, country="all", archetypes=()):
     return get_archetype_success(get_connection(),
                                  min_date=start_date, max_date=end_date,
-                                 source=source, min_tournament_size=min_size)
+                                 source=source, min_tournament_size=min_size,
+                                 country=country,
+                                 archetypes=archetypes if archetypes else None)
 
 
 @st.cache_data(ttl=3600)
-def load_archetype_prices(start_date, end_date, source, min_size, country="all"):
+def load_archetype_prices(start_date, end_date, source, min_size, country="all", archetypes=()):
     """Average total deck price (main + side) per archetype, using cheapest card prices."""
     extra = "AND d.date >= ? AND d.date <= ?"
     params = [start_date, end_date]
@@ -51,6 +55,10 @@ def load_archetype_prices(start_date, end_date, source, min_size, country="all")
     if min_size and min_size > 1:
         extra += " AND d.total_players >= ?"
         params.append(min_size)
+    if archetypes:
+        placeholders = ",".join(["?"] * len(archetypes))
+        extra += f" AND d.archetype IN ({placeholders})"
+        params.extend(archetypes)
     return pd.read_sql_query(
         f"""SELECT d.archetype,
                   ROUND(AVG(deck_total), 0) AS avg_price_usd
@@ -72,12 +80,14 @@ def load_archetype_prices(start_date, end_date, source, min_size, country="all")
 # Tier List with win rate + prices
 st.subheader("Tier List (período filtrado)")
 tiers = load_tier_list(filters["start_date"], filters["end_date"],
-                       filters["source"], filters["min_size"])
+                       filters["source"], filters["min_size"],
+                       filters.get("country", "all"), tuple(filters.get("archetypes", [])))
 success_period = load_archetype_success(filters["start_date"], filters["end_date"],
-                                        filters["source"], filters["min_size"])
+                                        filters["source"], filters["min_size"],
+                                        filters.get("country", "all"), tuple(filters.get("archetypes", [])))
 prices_df = load_archetype_prices(filters["start_date"], filters["end_date"],
                                   filters["source"], filters["min_size"],
-                                  filters.get("country", "all"))
+                                  filters.get("country", "all"), tuple(filters.get("archetypes", [])))
 if not tiers.empty:
     if not success_period.empty:
         tiers = tiers.merge(
@@ -110,13 +120,15 @@ if not tiers.empty:
 col1, col2 = st.columns(2)
 with col1:
     meta_df = load_meta_share(filters["start_date"], filters["end_date"],
-                               filters["source"], filters["min_size"])
+                               filters["source"], filters["min_size"],
+                               filters.get("country", "all"), tuple(filters.get("archetypes", [])))
     if not meta_df.empty:
         st.plotly_chart(meta_share_pie(meta_df), use_container_width=True)
 
 with col2:
     success = load_archetype_success(filters["start_date"], filters["end_date"],
-                                     filters["source"], filters["min_size"])
+                                     filters["source"], filters["min_size"],
+                                     filters.get("country", "all"), tuple(filters.get("archetypes", [])))
     if not success.empty:
         st.plotly_chart(success_scatter(success), use_container_width=True)
 
@@ -124,12 +136,16 @@ with col2:
 st.subheader("Meta por Fuente — Paper vs Online")
 try:
     @st.cache_data(ttl=3600)
-    def load_meta_by_source(start_date, end_date, min_size, country="all"):
+    def load_meta_by_source(start_date, end_date, min_size, country="all", archetypes=()):
         extra = ""
         params = [start_date, end_date, min_size]
         if country and country != "all":
-            extra = " AND t.country = ?"
+            extra += " AND t.country = ?"
             params.append(country)
+        if archetypes:
+            placeholders = ",".join(["?"] * len(archetypes))
+            extra += f" AND d.archetype IN ({placeholders})"
+            params.extend(archetypes)
         return pd.read_sql_query(
             f"""SELECT d.archetype, t.source,
                       COUNT(*) as decks,
@@ -144,6 +160,7 @@ try:
     source_df = load_meta_by_source(
         filters["start_date"], filters["end_date"],
         filters["min_size"], filters.get("country", "all"),
+        tuple(filters.get("archetypes", [])),
     )
     if not source_df.empty:
         top_arch = source_df.groupby("archetype")["decks"].sum().nlargest(10).index
@@ -229,19 +246,31 @@ if not success.empty and not prices_df.empty:
 st.subheader("Meta por País")
 try:
     @st.cache_data(ttl=3600)
-    def load_meta_by_country(start_date, end_date, min_size):
+    def load_meta_by_country(start_date, end_date, min_size, source="all", archetypes=()):
+        extra = ""
+        params = [start_date, end_date, min_size]
+        if source and source != "all":
+            extra += " AND t.source = ?"
+            params.append(source)
+        if archetypes:
+            placeholders = ",".join(["?"] * len(archetypes))
+            extra += f" AND d.archetype IN ({placeholders})"
+            params.extend(archetypes)
         return pd.read_sql_query(
-            """SELECT d.archetype, t.country,
+            f"""SELECT d.archetype, t.country,
                       COUNT(*) as decks,
                       ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (PARTITION BY t.country), 1) as share_pct
                FROM decks d JOIN tournaments t ON d.tournament_id = t.id
                WHERE d.date >= ? AND d.date <= ? AND d.total_players >= ?
-                 AND t.country IS NOT NULL AND t.country != 'Unknown'
+                 AND t.country IS NOT NULL AND t.country != 'Unknown'{extra}
                GROUP BY d.archetype, t.country""",
-            get_connection(), params=[start_date, end_date, min_size],
+            get_connection(), params=params,
         )
 
-    country_df = load_meta_by_country(filters["start_date"], filters["end_date"], filters["min_size"])
+    country_df = load_meta_by_country(
+        filters["start_date"], filters["end_date"], filters["min_size"],
+        filters.get("source", "all"), tuple(filters.get("archetypes", [])),
+    )
     if not country_df.empty:
         top_arch = country_df.groupby("archetype")["decks"].sum().nlargest(10).index
         top_countries = country_df.groupby("country")["decks"].sum().nlargest(8).index

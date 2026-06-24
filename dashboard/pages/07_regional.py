@@ -17,12 +17,23 @@ filters = sidebar_filters(conn)
 f_start = filters["start_date"]
 f_end = filters["end_date"]
 f_min = filters["min_size"]
+f_source = filters.get("source", "all")
+f_archetypes = tuple(filters.get("archetypes", []))
 
 
 @st.cache_data(ttl=3600)
-def load_country_volume(start_date, end_date, min_size):
+def load_country_volume(start_date, end_date, min_size, source="all", archetypes=()):
+    extra = ""
+    params = [start_date, end_date, min_size]
+    if source and source != "all":
+        extra += " AND t.source = ?"
+        params.append(source)
+    if archetypes:
+        placeholders = ",".join(["?"] * len(archetypes))
+        extra += f" AND d.archetype IN ({placeholders})"
+        params.extend(archetypes)
     return pd.read_sql_query(
-        """SELECT t.country,
+        f"""SELECT t.country,
                   COUNT(DISTINCT t.id)          AS torneos,
                   COUNT(DISTINCT d.id)           AS mazos,
                   COUNT(DISTINCT d.player_name)  AS jugadores,
@@ -32,35 +43,50 @@ def load_country_volume(start_date, end_date, min_size):
            FROM tournaments t
            JOIN decks d ON d.tournament_id = t.id
            WHERE t.country IS NOT NULL AND t.country != 'Unknown'
-             AND t.date >= ? AND t.date <= ? AND t.player_count >= ?
+             AND t.date >= ? AND t.date <= ? AND t.player_count >= ?{extra}
            GROUP BY t.country
            ORDER BY torneos DESC""",
-        get_connection(), params=[start_date, end_date, min_size],
+        get_connection(), params=params,
     )
 
 
 @st.cache_data(ttl=3600)
-def load_meta_by_country(start_date, end_date, min_size, countries):
+def load_meta_by_country(start_date, end_date, min_size, countries, source="all", archetypes=()):
     if not countries:
         return pd.DataFrame()
     placeholders = ",".join(["?"] * len(countries))
+    extra = ""
+    params = list(countries) + [start_date, end_date, min_size]
+    if source and source != "all":
+        extra += " AND t.source = ?"
+        params.append(source)
+    if archetypes:
+        arch_placeholders = ",".join(["?"] * len(archetypes))
+        extra += f" AND d.archetype IN ({arch_placeholders})"
+        params.extend(archetypes)
     return pd.read_sql_query(
         f"""SELECT d.archetype, t.country,
                   COUNT(*) AS decks,
                   ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (PARTITION BY t.country), 1) AS share_pct
            FROM decks d JOIN tournaments t ON d.tournament_id = t.id
            WHERE t.country IN ({placeholders})
-             AND t.date >= ? AND t.date <= ? AND t.player_count >= ?
+             AND t.date >= ? AND t.date <= ? AND t.player_count >= ?{extra}
            GROUP BY d.archetype, t.country""",
-        get_connection(), params=list(countries) + [start_date, end_date, min_size],
+        get_connection(), params=params,
     )
 
 
 @st.cache_data(ttl=3600)
-def load_archetype_evolution_by_country(archetype, start_date, end_date, min_size, countries):
+def load_archetype_evolution_by_country(archetype, start_date, end_date, min_size, countries,
+                                        source="all"):
     if not countries:
         return pd.DataFrame()
     placeholders = ",".join(["?"] * len(countries))
+    extra = ""
+    params = [archetype] + list(countries) + [start_date, end_date, min_size]
+    if source and source != "all":
+        extra += " AND t.source = ?"
+        params.append(source)
     return pd.read_sql_query(
         f"""SELECT strftime('%Y-%m', d.date) AS month,
                   t.country,
@@ -68,18 +94,23 @@ def load_archetype_evolution_by_country(archetype, start_date, end_date, min_siz
                   ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (PARTITION BY strftime('%Y-%m', d.date), t.country), 1) AS share_pct
            FROM decks d JOIN tournaments t ON d.tournament_id = t.id
            WHERE d.archetype = ? AND t.country IN ({placeholders})
-             AND t.date >= ? AND t.date <= ? AND t.player_count >= ?
+             AND t.date >= ? AND t.date <= ? AND t.player_count >= ?{extra}
            GROUP BY month, t.country
            ORDER BY month""",
         get_connection(),
-        params=[archetype] + list(countries) + [start_date, end_date, min_size],
+        params=params,
     )
 
 
 @st.cache_data(ttl=3600)
-def load_recent_by_country(start_date, end_date, min_size, country):
+def load_recent_by_country(start_date, end_date, min_size, country, source="all"):
+    extra = ""
+    params = [country, start_date, end_date, min_size]
+    if source and source != "all":
+        extra += " AND t.source = ?"
+        params.append(source)
     return pd.read_sql_query(
-        """SELECT t.name AS torneo, t.date, t.country, t.player_count AS jugadores,
+        f"""SELECT t.name AS torneo, t.date, t.country, t.player_count AS jugadores,
                   (SELECT d2.player_name FROM decks d2
                    WHERE d2.tournament_id = t.id AND d2.position = 1
                    LIMIT 1) AS ganador,
@@ -87,15 +118,15 @@ def load_recent_by_country(start_date, end_date, min_size, country):
                    WHERE d2.tournament_id = t.id AND d2.position = 1
                    LIMIT 1) AS arquetipo_ganador
            FROM tournaments t
-           WHERE t.country = ? AND t.date >= ? AND t.date <= ? AND t.player_count >= ?
+           WHERE t.country = ? AND t.date >= ? AND t.date <= ? AND t.player_count >= ?{extra}
            ORDER BY t.date DESC LIMIT 30""",
-        get_connection(), params=[country, start_date, end_date, min_size],
+        get_connection(), params=params,
     )
 
 
 # ── Volumen por país ──────────────────────────────────────────────────────────
 st.subheader("Volumen por País")
-vol_df = load_country_volume(f_start, f_end, f_min)
+vol_df = load_country_volume(f_start, f_end, f_min, f_source, f_archetypes)
 if vol_df.empty:
     st.info("No hay datos geográficos para el período seleccionado. "
             "Corré `python db/detect_location.py db/premodern.db` primero.")
@@ -133,7 +164,7 @@ selected_countries = st.multiselect(
 )
 
 if selected_countries:
-    meta_df = load_meta_by_country(f_start, f_end, f_min, tuple(selected_countries))
+    meta_df = load_meta_by_country(f_start, f_end, f_min, tuple(selected_countries), f_source, f_archetypes)
     if not meta_df.empty:
         top_arch = meta_df.groupby("archetype")["decks"].sum().nlargest(12).index
         meta_top = meta_df[meta_df["archetype"].isin(top_arch)]
@@ -164,7 +195,7 @@ with evo_col1:
 
 if selected_arch and evo_countries:
     evo_df = load_archetype_evolution_by_country(
-        selected_arch, f_start, f_end, f_min, tuple(evo_countries)
+        selected_arch, f_start, f_end, f_min, tuple(evo_countries), f_source
     )
     if not evo_df.empty:
         fig_evo = px.line(
@@ -181,7 +212,7 @@ if selected_arch and evo_countries:
 st.subheader("Últimos Torneos por País")
 detail_country = st.selectbox("País", available_countries, key="detail_country")
 if detail_country:
-    recent_df = load_recent_by_country(f_start, f_end, f_min, detail_country)
+    recent_df = load_recent_by_country(f_start, f_end, f_min, detail_country, f_source)
     if not recent_df.empty:
         st.dataframe(
             recent_df.rename(columns={

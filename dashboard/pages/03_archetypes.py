@@ -225,13 +225,15 @@ if selected:
         from analysis.success_metrics import get_archetype_success_over_time
 
         @st.cache_data(ttl=3600)
-        def load_evolution(archetype, start_date, end_date, source):
+        def load_evolution(archetype, start_date, end_date, source, min_size, country="all"):
             return get_archetype_success_over_time(
                 get_connection(), archetype,
                 min_date=start_date, max_date=end_date, source=source,
+                min_size=min_size, country=country,
             )
 
-        evo = load_evolution(selected, filters["start_date"], filters["end_date"], filters["source"])
+        evo = load_evolution(selected, filters["start_date"], filters["end_date"],
+                             filters["source"], filters["min_size"], filters.get("country", "all"))
         if evo is not None and not evo.empty:
             st.plotly_chart(evolution_line(evo, selected), use_container_width=True)
     except Exception:

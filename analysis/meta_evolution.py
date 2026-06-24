@@ -2,8 +2,9 @@ import pandas as pd
 import sqlite3
 
 
-def _base_decks_query(min_date=None, max_date=None, source=None, min_size=8):
-    """Build the base WHERE clause for decks filtered by date, source, size."""
+def _base_decks_query(min_date=None, max_date=None, source=None, min_size=8,
+                      country=None, archetypes=None):
+    """Build the base WHERE clause for decks filtered by date, source, size, country, archetypes."""
     conditions = ["1=1"]
     params = []
 
@@ -18,17 +19,26 @@ def _base_decks_query(min_date=None, max_date=None, source=None, min_size=8):
             "d.tournament_id IN (SELECT id FROM tournaments WHERE source = ?)"
         )
         params.append(source)
+    if country and country != "all":
+        conditions.append(
+            "d.tournament_id IN (SELECT id FROM tournaments WHERE country = ?)"
+        )
+        params.append(country)
     if min_size and min_size > 1:
         conditions.append("d.total_players >= ?")
         params.append(min_size)
+    if archetypes:
+        placeholders = ",".join(["?"] * len(archetypes))
+        conditions.append(f"d.archetype IN ({placeholders})")
+        params.extend(archetypes)
 
     return " AND ".join(conditions), params
 
 
 def get_meta_share(conn: sqlite3.Connection, min_date=None, max_date=None,
-                   source=None, min_size=1) -> pd.DataFrame:
+                   source=None, min_size=1, country=None, archetypes=None) -> pd.DataFrame:
     """Calculate monthly meta share % per archetype."""
-    where, params = _base_decks_query(min_date, max_date, source, min_size)
+    where, params = _base_decks_query(min_date, max_date, source, min_size, country, archetypes)
     query = f"""
         SELECT d.archetype, strftime('%Y-%m', d.date) AS month, COUNT(*) AS deck_count
         FROM decks d
@@ -44,10 +54,11 @@ def get_meta_share(conn: sqlite3.Connection, min_date=None, max_date=None,
 
 
 def get_meta_trend(conn: sqlite3.Connection, window: int = 3,
-                   min_date=None, max_date=None, source=None, min_size=1) -> pd.DataFrame:
+                   min_date=None, max_date=None, source=None, min_size=1,
+                   country=None, archetypes=None) -> pd.DataFrame:
     """Meta share with rolling average to smooth noise."""
     df = get_meta_share(conn, min_date=min_date, max_date=max_date,
-                        source=source, min_size=min_size)
+                        source=source, min_size=min_size, country=country, archetypes=archetypes)
     if df.empty:
         return df
     pivot = df.pivot_table(index="month", columns="archetype",
@@ -56,10 +67,11 @@ def get_meta_trend(conn: sqlite3.Connection, window: int = 3,
 
 
 def detect_breakouts(conn: sqlite3.Connection, threshold: float = 50.0,
-                     min_date=None, max_date=None, source=None, min_size=1) -> pd.DataFrame:
+                     min_date=None, max_date=None, source=None, min_size=1,
+                     country=None, archetypes=None) -> pd.DataFrame:
     """Find archetypes with >threshold% month-over-month share increase."""
     df = get_meta_share(conn, min_date=min_date, max_date=max_date,
-                        source=source, min_size=min_size)
+                        source=source, min_size=min_size, country=country, archetypes=archetypes)
     if df.empty:
         return pd.DataFrame()
     pivot = df.pivot_table(index="month", columns="archetype",
@@ -81,11 +93,12 @@ def detect_breakouts(conn: sqlite3.Connection, threshold: float = 50.0,
 
 
 def get_tier_list(conn: sqlite3.Connection, months: int = 3,
-                  source=None, min_size=1, min_date=None, max_date=None) -> pd.DataFrame:
+                  source=None, min_size=1, min_date=None, max_date=None,
+                  country=None, archetypes=None) -> pd.DataFrame:
     """Tier list based on meta share. If min_date/max_date are given, uses that
     full range; otherwise falls back to the most recent `months` months."""
     df = get_meta_share(conn, min_date=min_date, max_date=max_date,
-                        source=source, min_size=min_size)
+                        source=source, min_size=min_size, country=country, archetypes=archetypes)
     if df.empty:
         return df
     if min_date or max_date:

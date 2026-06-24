@@ -18,25 +18,29 @@ filters = sidebar_filters(conn)
 
 
 @st.cache_data(ttl=3600)
-def load_meta_share(start_date, end_date, source, min_size):
+def load_meta_share(start_date, end_date, source, min_size, country="all", archetypes=()):
     return get_meta_share(get_connection(), min_date=start_date, max_date=end_date,
-                          source=source, min_size=min_size)
+                          source=source, min_size=min_size, country=country,
+                          archetypes=archetypes if archetypes else None)
 
 
 @st.cache_data(ttl=3600)
-def load_meta_trend(start_date, end_date, source, min_size):
+def load_meta_trend(start_date, end_date, source, min_size, country="all", archetypes=()):
     return get_meta_trend(get_connection(), min_date=start_date, max_date=end_date,
-                          source=source, min_size=min_size)
+                          source=source, min_size=min_size, country=country,
+                          archetypes=archetypes if archetypes else None)
 
 
 @st.cache_data(ttl=3600)
-def load_breakouts(start_date, end_date, source, min_size):
+def load_breakouts(start_date, end_date, source, min_size, country="all", archetypes=()):
     return detect_breakouts(get_connection(), min_date=start_date, max_date=end_date,
-                            source=source, min_size=min_size)
+                            source=source, min_size=min_size, country=country,
+                            archetypes=archetypes if archetypes else None)
 
 
 meta_df = load_meta_share(filters["start_date"], filters["end_date"],
-                           filters["source"], filters["min_size"])
+                           filters["source"], filters["min_size"],
+                           filters.get("country", "all"), tuple(filters.get("archetypes", [])))
 
 if meta_df.empty:
     st.warning("No hay datos para el rango seleccionado.")
@@ -49,14 +53,16 @@ st.plotly_chart(meta_share_area(meta_df, top_n=top_n), use_container_width=True)
 # Heatmap
 st.subheader("Heatmap Meta Share")
 trend_df = load_meta_trend(filters["start_date"], filters["end_date"],
-                           filters["source"], filters["min_size"])
+                           filters["source"], filters["min_size"],
+                           filters.get("country", "all"), tuple(filters.get("archetypes", [])))
 if not trend_df.empty:
     st.plotly_chart(heatmap_meta(trend_df, top_n=top_n), use_container_width=True)
 
 # Breakouts
 st.subheader("Breakouts Recientes")
 breakouts = load_breakouts(filters["start_date"], filters["end_date"],
-                           filters["source"], filters["min_size"])
+                           filters["source"], filters["min_size"],
+                           filters.get("country", "all"), tuple(filters.get("archetypes", [])))
 if not breakouts.empty:
     st.dataframe(
         breakouts.rename(columns={

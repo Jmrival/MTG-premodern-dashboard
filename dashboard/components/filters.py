@@ -98,3 +98,36 @@ def apply_filters(query: str, filters: dict) -> tuple[str, list]:
         query += " WHERE " + " AND ".join(conditions)
 
     return query, params
+
+
+def build_filter_clause(filters: dict, d_alias: str = "d", t_alias: str = "t") -> tuple[str, list]:
+    """Build SQL WHERE clause fragment (starting with AND) for all active filters.
+
+    Assumes:
+    - d_alias has columns: date, total_players, archetype, tournament_id
+    - t_alias has columns: source, country (only used when joins are present)
+    """
+    clause = ""
+    params = []
+
+    if filters.get("start_date"):
+        clause += f" AND {d_alias}.date >= ?"
+        params.append(filters["start_date"])
+    if filters.get("end_date"):
+        clause += f" AND {d_alias}.date <= ?"
+        params.append(filters["end_date"])
+    if filters.get("source") and filters["source"] != "all":
+        clause += f" AND {d_alias}.tournament_id IN (SELECT id FROM tournaments WHERE source = ?)"
+        params.append(filters["source"])
+    if filters.get("country") and filters["country"] != "all":
+        clause += f" AND {d_alias}.tournament_id IN (SELECT id FROM tournaments WHERE country = ?)"
+        params.append(filters["country"])
+    if filters.get("min_size", 1) > 1:
+        clause += f" AND {d_alias}.total_players >= ?"
+        params.append(filters["min_size"])
+    if filters.get("archetypes"):
+        placeholders = ",".join(["?"] * len(filters["archetypes"]))
+        clause += f" AND {d_alias}.archetype IN ({placeholders})"
+        params.extend(filters["archetypes"])
+
+    return clause, params

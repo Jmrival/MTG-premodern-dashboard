@@ -17,12 +17,20 @@ filters = sidebar_filters(conn)
 
 
 @st.cache_data(ttl=3600)
-def load_leaderboard(start_date, end_date, source, min_size):
+def load_leaderboard(start_date, end_date, source, min_size, country="all", archetypes=()):
     extra = ""
-    params = [start_date, end_date, min_size]
+    params = [start_date, end_date]
     if source and source != "all":
-        extra = " AND tournament_id IN (SELECT id FROM tournaments WHERE source = ?)"
-        params.insert(2, source)  # insert before min_size
+        extra += " AND tournament_id IN (SELECT id FROM tournaments WHERE source = ?)"
+        params.append(source)
+    if country and country != "all":
+        extra += " AND tournament_id IN (SELECT id FROM tournaments WHERE country = ?)"
+        params.append(country)
+    if archetypes:
+        placeholders = ",".join(["?"] * len(archetypes))
+        extra += f" AND archetype IN ({placeholders})"
+        params.extend(archetypes)
+    params.append(min_size)
     return pd.read_sql_query(
         f"""SELECT player_name,
                   COUNT(*) as entradas,
@@ -58,14 +66,16 @@ def load_player_history(name_query):
 # Player scatter overview
 st.subheader("Especialistas vs Experimentadores")
 scatter_df = load_leaderboard(filters["start_date"], filters["end_date"],
-                               filters["source"], filters["min_size"])
+                               filters["source"], filters["min_size"],
+                               filters.get("country", "all"), tuple(filters.get("archetypes", [])))
 if not scatter_df.empty:
     st.plotly_chart(player_scatter(scatter_df), use_container_width=True)
 
 # Leaderboard
 st.subheader("Leaderboard")
 leaderboard = load_leaderboard(filters["start_date"], filters["end_date"],
-                                filters["source"], filters["min_size"])
+                                filters["source"], filters["min_size"],
+                                filters.get("country", "all"), tuple(filters.get("archetypes", [])))
 st.dataframe(leaderboard.rename(columns={
     "player_name": "Jugador", "entradas": "Entradas", "torneos": "Torneos",
     "victorias": "Victorias", "top4s": "Top 4", "top8s": "Top 8",
