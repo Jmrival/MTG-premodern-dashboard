@@ -77,7 +77,7 @@ MANUAL_OVERRIDES: dict[int, tuple[str, str | None]] = {}
 # ──────────────────────────────────────────────────────────────────────────────
 RULES: list[tuple[str, list[str], dict[str, str]]] = [
     ("Argentina", [
-        "argentina", "buenos aires", "neuqu", "la plata", "magic lair",
+        "argentina", "argentino", "buenos aires", "neuqu", "la plata", "lair argentina",
         "bazaar of baghdad", "confluencia", "citadel", "mtg pirulo",
         "rosario", "córdoba", "cordoba", "mendoza", "tucumán", "tucuman",
         "santa fe", "mar del plata",
