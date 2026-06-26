@@ -100,6 +100,7 @@ def load_card_sections(archetype, start_date, end_date, source, min_size, countr
     )
     sb = pd.read_sql_query(
         f"""SELECT dc.card_name, COUNT(DISTINCT dc.deck_id) as decks,
+                  ROUND(COUNT(DISTINCT dc.deck_id) * 100.0 / ?, 1) as pct,
                   ROUND(AVG(dc.quantity), 1) as avg_qty,
                   {success_expr},
                   MAX(c.price_usd) as price_usd
@@ -107,7 +108,7 @@ def load_card_sections(archetype, start_date, end_date, source, min_size, countr
            JOIN cards c ON c.name = dc.card_name
            WHERE d.archetype = ? AND dc.is_sideboard = 1{extra}
            GROUP BY dc.card_name ORDER BY decks DESC LIMIT 20""",
-        c, params=[archetype] + params,
+        c, params=[total_decks_arch, archetype] + params,
     )
     return core, flex, sb, total_decks_arch
 
@@ -323,7 +324,8 @@ if selected:
             if sb is not None and not sb.empty:
                 st.dataframe(
                     sb.rename(columns={
-                        "card_name": "Carta", "decks": "Mazos", "avg_qty": "Promedio",
+                        "card_name": "Carta", "decks": "Mazos", "pct": "% Mazos",
+                        "avg_qty": "Promedio",
                         "top8_pct": "Top 8 %", "top4_pct": "Top 4 %", "top1_pct": "Top 1 %",
                         "price_usd": "Precio (USD)",
                     }),
